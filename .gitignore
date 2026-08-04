@@ -1,0 +1,33 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build / deploy
+dist/
+.output/
+.vercel/
+.nitro/
+node_modules/.nitro/
+
+# logs / local
+*.log
+/tmp/
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# app builder internals (not needed in the public repo)
+.grok/
+artifacts/
+attachments/
+screenshots/*.png
+!screenshots/.gitkeep
+
+# lock noise
+.node_modules.lock
