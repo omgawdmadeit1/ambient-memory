@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#0f0f0f"/>
+<meta name="description" content="Zero effort in, useful reminder out"/>
+<title>Ambient Memory</title>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+<style>
+*{box-sizing:border-box;border-color:#2a2a2a}html{color-scheme:dark}
+body{margin:0;min-height:100dvh;background:#0f0f0f;color:#f5f5f5;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;font:inherit}button:disabled{opacity:.5;cursor:default}
+input,textarea{font:inherit;color:inherit}
+.wrap{max-width:32rem;margin:0 auto;padding:2rem 1rem 1.5rem;display:flex;flex-direction:column;min-height:100dvh}
+.header{margin-bottom:1.5rem}.brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.logo{display:flex;align-items:center;gap:.65rem}.logo-mark{width:2.25rem;height:2.25rem;border-radius:.75rem;background:#222;display:grid;place-items:center}
+h1{font-size:1rem;font-weight:600;margin:0}.sub{font-size:11px;color:#737373;margin:0}
+h2{font-size:1.35rem;font-weight:500;margin:0;letter-spacing:-.02em}.lede{margin:.4rem 0 0;color:#a3a3a3;font-size:.875rem}
+.banner{display:flex;align-items:center;justify-content:space-between;gap:.75rem;border:1px solid #2a2a2a;background:#1a1a1a;border-radius:.75rem;padding:.65rem .75rem;margin-bottom:.75rem;font-size:.875rem;color:#a3a3a3}
+.btn{border:0;border-radius:.5rem;padding:.55rem .9rem;font-weight:500;font-size:.875rem}.btn-sec{background:#222;color:#f5f5f5;border:1px solid #2a2a2a}.btn-pri{background:#3b82f6;color:#fff}
+.btn-icon{width:2.25rem;height:2.25rem;border-radius:.5rem;background:transparent;border:0;color:#737373;display:grid;place-items:center}.btn-icon:hover{background:#222;color:#f5f5f5}
+.label{font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:#737373;margin:0 0 .5rem}
+.search{position:relative;margin-bottom:1rem}.search input{width:100%;height:2.75rem;border-radius:.75rem;border:1px solid #2a2a2a;background:#1a1a1a;padding:0 2.5rem;outline:none}
+.search input:focus{border-color:rgba(59,130,246,.4);box-shadow:0 0 0 1px rgba(59,130,246,.2)}
+.search svg{position:absolute;left:.75rem;top:50%;transform:translateY(-50%);opacity:.5}
+.list{flex:1;display:flex;flex-direction:column;gap:.65rem;overflow:auto;margin-bottom:1rem}
+.card{border:1px solid #2a2a2a;background:#1a1a1a;border-radius:.75rem;padding:1rem}.card.hi{border-color:rgba(59,130,246,.4);box-shadow:0 0 0 1px rgba(59,130,246,.2)}
+.entity{font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:#737373;margin:0 0 .15rem}
+.fact{margin:0;font-size:15px;line-height:1.35}.raw{margin:.4rem 0 0;font-size:12px;color:#737373;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tags{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem}.tag{font-size:11px;background:#222;color:#a3a3a3;border-radius:.4rem;padding:.15rem .5rem}
+.empty{border:1px dashed #2a2a2a;border-radius:.75rem;padding:2.5rem 1rem;text-align:center;color:#a3a3a3;font-size:.875rem}
+.capture{position:sticky;bottom:0;background:rgba(15,15,15,.95);backdrop-filter:blur(8px);border-top:1px solid rgba(42,42,42,.6);padding:.75rem 1rem max(1rem,env(safe-area-inset-bottom));margin:0 -1rem}
+.box{border:1px solid #2a2a2a;background:#1a1a1a;border-radius:.75rem;padding:.5rem}.box:focus-within{border-color:rgba(59,130,246,.4);box-shadow:0 0 0 1px rgba(59,130,246,.2)}
+textarea{width:100%;border:0;background:transparent;outline:none;resize:none;min-height:3.25rem;padding:.5rem .75rem;font-size:17px;line-height:1.5}
+.row{display:flex;align-items:center;justify-content:space-between;padding:0 .25rem .25rem}.hint{font-size:11px;color:#737373}
+.send{width:2.5rem;height:2.5rem;border-radius:999px;border:0;background:#3b82f6;color:#fff;display:grid;place-items:center}
+.toast{position:fixed;left:50%;top:1rem;transform:translateX(-50%);background:#1a1a1a;border:1px solid #2a2a2a;border-radius:.75rem;padding:.6rem 1rem;font-size:.875rem;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:grid;place-items:center;z-index:60;padding:1rem}
+.modal{width:min(100%,24rem);background:#1a1a1a;border:1px solid #2a2a2a;border-radius:.75rem;padding:1.25rem}
+.modal h3{margin:0;font-size:1rem;font-weight:500}.modal p{margin:.35rem 0 0;color:#a3a3a3;font-size:.875rem}
+.modal .actions{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-top:1.25rem}
+.remind{position:fixed;left:1rem;right:1rem;bottom:6rem;max-width:28rem;margin:0 auto;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:.75rem;padding:1rem;z-index:50;box-shadow:0 20px 40px rgba(0,0,0,.45)}
+.demo{font-size:11px;color:#737373;text-align:right;margin-bottom:.5rem;background:none;border:0;text-decoration:underline;text-underline-offset:2px;width:100%}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+
+const SEEDS = [
+  "Doctor said take the antibiotic at 8pm for the next 10 days",
+  "Kid's shoe size is 13C",
+  "Car was last serviced on March 12, 2026 — next due around 5,000 miles or 6 months",
+];
+const STOP = new Set("a an the is are was were what whats who when where how does do did my our me i to for of in on at and or about tell show find remember please".split(" "));
+const KEY = "ambient-memory-v1";
+const pad = n => String(n).padStart(2,"0");
+const today = () => { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const uid = () => crypto.randomUUID();
+const nowIso = () => new Date().toISOString();
+
+function parseClock(text){
+  const m12=text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  if(m12){let h=+m12[1];const min=m12[2]?+m12[2]:0;const ap=m12[3].toLowerCase();if(ap==="pm"&&h<12)h+=12;if(ap==="am"&&h===12)h=0;return `${pad(h)}:${pad(min)}`;}
+  const m24=text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+  if(m24)return `${pad(+m24[1])}:${m24[2]}`;
+  return null;
+}
+function addDays(iso,days){const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+days);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
+function fmtTime(t){if(!t)return null;const [h,m]=t.split(":").map(Number);const ap=h>=12?"PM":"AM";const h12=h%12||12;return `${h12}:${pad(m)} ${ap}`;}
+
+function parseLocally(raw){
+  const text=raw.trim(), lower=text.toLowerCase();
+  if(!text||text.length<2) return {skip:true,confidence:0};
+  if(/^(hi|hello|hey|thanks|ok)\b/i.test(text)&&text.length<20) return {skip:true,confidence:0};
+  if(lower.includes("antibiotic")||/doctor\s+said\s+take/.test(lower)){
+    const days=+(lower.match(/(\d+)\s*days?/)||[,10])[1];
+    const trigger_time=parseClock(lower)||"20:00";
+    return {entity:"antibiotic",fact:`take at ${fmtTime(trigger_time)} for ${days} days`,trigger_type:"time",trigger_time,recurrence_rule:`daily for ${days} days`,expiry_date:addDays(today(),days),supersedes_hint:null,confidence:.95,skip:false};
+  }
+  if(/shoe\s+size/.test(lower)){
+    const size=(lower.match(/size\s+(?:is\s+)?(?:now\s+)?([0-9]+(?:\.[0-9]+)?[a-z]?)/i)||[])[1]||null;
+    const isUpdate=/\bnow\b/.test(lower);
+    const hasKid=/\bkid/.test(lower);
+    return {entity:hasKid?"kid shoe size":"shoe size",fact:size,trigger_type:"none",trigger_time:null,recurrence_rule:null,expiry_date:null,supersedes_hint:isUpdate?"shoe size":null,confidence:size?.95:.7,skip:false};
+  }
+  if(/car/.test(lower)&&/servic/.test(lower)){
+    const dm=text.match(/(?:on\s+)?((?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}(?:,?\s*\d{4})?)/i);
+    return {entity:"car service",fact:dm?`last serviced ${dm[1]}`:text,trigger_type:"none",trigger_time:null,recurrence_rule:null,expiry_date:null,supersedes_hint:null,confidence:.9,skip:false};
+  }
+  if(/passport/.test(lower)&&/expir/.test(lower)){
+    const year=(lower.match(/20\d{2}/)||[])[0]||null;
+    return {entity:"passport",fact:year?`expires ${year}`:"expires",trigger_type:"none",trigger_time:null,recurrence_rule:null,expiry_date:year?`${year}-12-31`:null,supersedes_hint:null,confidence:.92,skip:false};
+  }
+  if(/(vitamin|pill|medicine)/.test(lower)&&/every\s+(morning|day|evening|night)/.test(lower)){
+    const when=/evening|night/.test(lower)?"20:00":"08:00";
+    return {entity:(lower.match(/(vitamin\s*[a-z0-9]+)/i)||["supplement"])[0],fact:`take every ${/evening|night/.test(lower)?"evening":"morning"}`,trigger_type:"recurring",trigger_time:when,recurrence_rule:"daily",expiry_date:null,supersedes_hint:null,confidence:.9,skip:false};
+  }
+  if(/wifi|wi-fi|password/.test(lower)){
+    const pass=(text.match(/(?:password\s+is\s+|:\s*)([^\s,]+)/i)||[])[1];
+    return {entity:"wifi password",fact:pass||text,trigger_type:"none",trigger_time:null,recurrence_rule:null,expiry_date:null,supersedes_hint:null,confidence:pass?.95:.75,skip:false};
+  }
+  const isMatch=text.match(/^(.+?)\s+(?:is|are|was|were)\s+(.+)$/i);
+  if(isMatch&&isMatch[1].length<60){
+    return {entity:isMatch[1].replace(/^(my|the|a|an)\s+/i,"").trim().toLowerCase(),fact:isMatch[2].trim(),trigger_type:"none",trigger_time:null,recurrence_rule:null,expiry_date:null,supersedes_hint:null,confidence:.8,skip:false};
+  }
+  return {entity:null,fact:text,trigger_type:"none",trigger_time:null,recurrence_rule:null,expiry_date:null,supersedes_hint:null,confidence:.55,skip:false};
+}
+
+function similar(a,b){const ka=(a||"").toLowerCase(),kb=(b||"").toLowerCase();if(!ka||!kb)return false;if(ka===kb||ka.includes(kb)||kb.includes(ka))return true;return ka.includes("shoe")&&kb.includes("shoe");}
+function active(list){const d=today();return list.filter(m=>!m.superseded_by&&(!m.expiry_date||m.expiry_date>=d)).sort((a,b)=>a.created_at<b.created_at?1:-1);}
+function build(raw,p){const t=nowIso();return{id:uid(),raw_text:raw.trim(),entity:p.entity,fact:p.fact,trigger_type:p.trigger_type||"none",trigger_time:p.trigger_time,recurrence_rule:p.recurrence_rule,expiry_date:p.expiry_date,superseded_by:null,parse_status:p.confidence<.5?"failed":"success",created_at:t,updated_at:t,last_notified_date:null};}
+
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||"null")||{memories:[]};}catch{return{memories:[]};}}
+function save(s){localStorage.setItem(KEY,JSON.stringify({memories:s.memories}));}
+
+let state=load();
+if(!state.memories.length){state.memories=SEEDS.map(r=>build(r,parseLocally(r)));save(state);}
+
+let query="what size shoes does my kid wear";
+let pending=null;
+let toast=null;
+let remind=null;
+
+function search(q){
+  const act=active(state.memories);
+  const tokens=q.trim().toLowerCase().split(/\s+/).map(t=>t.replace(/[^\w'-]/g,"")).filter(t=>t.length>1&&!STOP.has(t));
+  if(!tokens.length)return act;
+  return act.map(m=>{
+    const hay=`${m.raw_text} ${m.entity||""} ${m.fact||""}`.toLowerCase();
+    let score=0;for(const t of tokens){if(hay.includes(t))score+=2;if((m.entity||"").toLowerCase().includes(t))score+=4;if((m.fact||"").toLowerCase().includes(t))score+=3;}
+    return{m,score};
+  }).filter(x=>x.score>=2).sort((a,b)=>b.score-a.score).map(x=>x.m);
+}
+
+function capture(text){
+  const p=parseLocally(text);
+  if(p.skip)return{msg:"Nothing to remember."};
+  const act=active(state.memories);
+  const existing=act.find(m=>similar(m.entity,p.entity)||(p.supersedes_hint&&similar(m.entity,p.supersedes_hint)));
+  if(existing){
+    const high=(p.confidence>=.7&&p.supersedes_hint)||(p.confidence>=.85&&similar(existing.entity,p.entity));
+    if(high){
+      const neu=build(text,p);
+      existing.superseded_by=neu.id;existing.updated_at=nowIso();
+      state.memories=[neu,...state.memories];save(state);return{msg:"Remembered."};
+    }
+    pending={raw:text,parsed:p,candidateId:existing.id,entity:existing.entity||"that note"};
+    return{clarify:true};
+  }
+  state.memories=[build(text,p),...state.memories];save(state);return{msg:"Remembered."};
+}
+
+function showToast(m){toast=m;render();setTimeout(()=>{toast=null;render();},1600);}
+
+function render(){
+  const list=query.trim()?search(query):active(state.memories);
+  const app=document.getElementById("app");
+  app.innerHTML=`
+    <header class="header">
+      <div class="brand">
+        <div class="logo">
+          <div class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5a7 7 0 0 1 7 7c0 3-2 5.5-4 7v2H9v-2c-2-1.5-4-4-4-7a7 7 0 0 1 7-7z"/></svg></div>
+          <div><h1>Ambient Memory</h1><p class="sub">Zero effort in · useful out</p></div>
+        </div>
+        <button class="btn-icon" title="Reset demo" id="reset">↻</button>
+      </div>
+      <h2>I remember things so you don’t have to.</h2>
+      <p class="lede">Just tell me once. I’ll bring it back when it matters.</p>
+    </header>
+    <div class="banner" id="notifBanner">
+      <span>Enable time-based reminders</span>
+      <button class="btn btn-sec" id="enableNotif">Enable</button>
+    </div>
+    <button class="demo" id="demoPing">Demo notification</button>
+    <p class="label">${query.trim()?"Search":"Already remembered for you"}</p>
+    <div class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>
+      <input id="q" type="search" value=${JSON.stringify(query)} placeholder="Ask me anything…" />
+    </div>
+    <div class="list">
+      ${list.length?list.map((m,i)=>`
+        <article class="card ${query.trim()&&i===0?"hi":""}">
+          ${m.entity?`<p class="entity">${esc(m.entity)}</p>`:""}
+          <p class="fact">${esc(m.fact||m.raw_text)}</p>
+          <p class="raw">${esc(m.raw_text)}</p>
+          <div class="tags">
+            ${m.trigger_time?`<span class="tag">${esc(fmtTime(m.trigger_time))}</span>`:""}
+            ${m.recurrence_rule?`<span class="tag">${esc(m.recurrence_rule)}</span>`:""}
+            ${m.expiry_date?`<span class="tag">until ${esc(m.expiry_date)}</span>`:""}
+          </div>
+        </article>`).join(""):`<p class="empty">${query.trim()?"Nothing found.":"Nothing stored yet."}</p>`}
+    </div>
+    <div class="capture">
+      <div class="box">
+        <textarea id="cap" rows="2" placeholder="Tell me something to remember…"></textarea>
+        <div class="row"><span class="hint">Enter to remember</span>
+          <button class="send" id="send" aria-label="Remember">↑</button>
+        </div>
+      </div>
+    </div>
+    ${toast?`<div class="toast">${esc(toast)}</div>`:""}
+    ${remind?`<div class="remind"><strong style="font-size:12px;color:#737373">Reminder</strong><div style="margin-top:4px">${esc(remind)}</div></div>`:""}
+    ${pending?`<div class="modal-bg"><div class="modal">
+      <h3>Update the existing note about ${esc(pending.entity)}?</h3>
+      <p>One choice only. No review queue.</p>
+      <div class="actions">
+        <button class="btn btn-pri" id="upd">Update</button>
+        <button class="btn btn-sec" id="keep">Keep both</button>
+      </div>
+    </div></div>`:""}
+  `;
+  const nb=document.getElementById("notifBanner");
+  if(!("Notification"in window)||Notification.permission!=="default") nb.style.display="none";
+  document.getElementById("q").oninput=e=>{query=e.target.value;render();const el=document.getElementById("q");el.focus();el.setSelectionRange(el.value.length,el.value.length);};
+  document.getElementById("send").onclick=()=>doCapture();
+  document.getElementById("cap").onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();doCapture();}};
+  document.getElementById("reset").onclick=()=>{state.memories=SEEDS.map(r=>build(r,parseLocally(r)));save(state);query="what size shoes does my kid wear";showToast("Demo reset.");};
+  document.getElementById("enableNotif")?.addEventListener("click",async()=>{await Notification.requestPermission();render();});
+  document.getElementById("demoPing").onclick=()=>{remind="Take the antibiotic. 8:00 PM";if("Notification"in window&&Notification.permission==="granted")try{new Notification("Ambient Memory",{body:remind});}catch{}render();setTimeout(()=>{remind=null;render();},5000);};
+  if(pending){
+    document.getElementById("upd").onclick=()=>{const neu=build(pending.raw,pending.parsed);const old=state.memories.find(m=>m.id===pending.candidateId);if(old){old.superseded_by=neu.id;old.updated_at=nowIso();}state.memories=[neu,...state.memories];save(state);pending=null;showToast("Remembered.");};
+    document.getElementById("keep").onclick=()=>{state.memories=[build(pending.raw,pending.parsed),...state.memories];save(state);pending=null;showToast("Remembered.");};
+  }
+}
+function doCapture(){
+  const el=document.getElementById("cap");const text=el.value.trim();if(!text)return;
+  const r=capture(text);el.value="";
+  if(r.clarify){render();return;}
+  showToast(r.msg||"Remembered.");
+}
+function esc(s){var m={};m['&']='&'+'amp;';m['<']='&'+'lt;';m['>']='&'+'gt;';m['"']='&'+'quot;';m["'"]='&#39;';return String(s==null?'':s).replace(/[&<>"']/g,function(c){return m[c];});}
+render();
+// reminder tick
+setInterval(()=>{
+  const now=new Date();const cur=`${pad(now.getHours())}:${pad(now.getMinutes())}`;const d=today();
+  for(const m of active(state.memories)){
+    if((m.trigger_type==="time"||m.trigger_type==="recurring")&&m.trigger_time===cur&&m.last_notified_date!==d){
+      const body=`${m.fact||m.raw_text}. ${fmtTime(m.trigger_time)}`;
+      remind=body;m.last_notified_date=d;save(state);
+      if("Notification"in window&&Notification.permission==="granted")try{new Notification("Ambient Memory",{body,tag:m.id});}catch{}
+      render();
+    }
+  }
+},15000);
+
+</script>
+</body>
+</html>
