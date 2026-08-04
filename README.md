@@ -4,6 +4,11 @@
 
 A daily-life memory layer. You say something once in natural language; the app structures it and brings it back when it matters — no folders, tags, or filing.
 
+## Live demo
+
+- **GitHub Pages:** https://omgawdmadeit1.github.io/ambient-memory/
+- **Source:** https://github.com/omgawdmadeit1/ambient-memory
+
 ## What it does
 
 1. **Capture** — Type one sentence, press Enter. No categories.
@@ -18,14 +23,15 @@ A daily-life memory layer. You say something once in natural language; the app s
 
 Try search: *what size shoes does my kid wear*
 
-## Stack
+## Stack (full source)
 
 - TanStack Start (React 19 + Vite)
 - TypeScript + Tailwind CSS v4
-- Zustand + localStorage (local-first persistence)
-- Deterministic NL parser (covers the product test set); optional xAI Grok parse when `XAI_API_KEY` is set
-- Browser Notification API for time-based surfaces
-- PWA-ready manifest
+- Zustand + localStorage (local-first)
+- Deterministic NL parser (+ optional xAI Grok when `XAI_API_KEY` is set)
+- Browser Notification API
+
+The GitHub Pages deploy is a lightweight static build of the same capture/store/surface loop.
 
 ## Local development
 
@@ -40,24 +46,6 @@ App binds to `0.0.0.0:8080`.
 npm run typecheck
 npm run build
 ```
-
-## Capture examples
-
-```
-doctor said take the antibiotic at 8pm for 10 days
-kid's shoe size is 13C now
-the wifi password is blueSky99
-shoe size is now 1
-take vitamin D every morning
-```
-
-## Product principles
-
-- Capture requires ≤1 decision (typing)
-- Zero manual filing
-- Surface only high-confidence value
-- Ambiguity = one binary question max
-- Calm microcopy: “Remembered.”
 
 ## License
 
