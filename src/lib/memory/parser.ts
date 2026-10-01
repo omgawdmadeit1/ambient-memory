@@ -10,9 +10,18 @@ function addDays(isoDate: string, days: number): string {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
-function todayIso(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+/** Local calendar YYYY-MM-DD. Do not use UTC (toISOString) — evening US/EU dates slip a day. */
+export function todayIso(now: Date = new Date()): string {
+  return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+}
+
+export function isMemoryActive(
+  m: { superseded_by?: string | null; expiry_date?: string | null },
+  now: Date = new Date(),
+): boolean {
+  if (m.superseded_by) return false;
+  if (m.expiry_date && m.expiry_date < todayIso(now)) return false;
+  return true;
 }
 
 function nextWeekday(target: number, hour: number, minute: number): { date: string; time: string } {
