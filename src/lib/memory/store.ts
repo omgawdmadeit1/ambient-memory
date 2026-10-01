@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CaptureResult, Memory, ParsedMemory } from "./types";
-import { parseLocally } from "./parser";
+import { isMemoryActive, parseLocally, todayIso } from "./parser";
 
 const SEED_RAW = [
   "Doctor said take the antibiotic at 8pm for the next 10 days",
@@ -55,8 +55,8 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function todayDate() {
-  return new Date().toISOString().slice(0, 10);
+function todayDate(now: Date = new Date()) {
+  return todayIso(now);
 }
 
 function entityKey(entity: string | null | undefined) {
@@ -111,12 +111,6 @@ export interface MemoryState {
   remove: (id: string) => void;
   dueForNotification: (now?: Date) => Memory[];
   resetDemo: () => void;
-}
-
-function isActive(m: Memory): boolean {
-  if (m.superseded_by) return false;
-  if (m.expiry_date && m.expiry_date < todayDate()) return false;
-  return true;
 }
 
 export const useMemoryStore = create<MemoryState>()(
@@ -241,7 +235,7 @@ export const useMemoryStore = create<MemoryState>()(
 
       activeMemories: () => {
         return get()
-          .memories.filter((m) => isActive(m))
+          .memories.filter((m) => isMemoryActive(m))
           .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
       },
 
@@ -262,15 +256,15 @@ export const useMemoryStore = create<MemoryState>()(
         const hh = now.getHours().toString().padStart(2, "0");
         const mm = now.getMinutes().toString().padStart(2, "0");
         const current = `${hh}:${mm}`;
-        const d = todayDate();
+        const d = todayDate(now);
         return get()
-          .activeMemories()
+          .memories.filter((m) => isMemoryActive(m, now))
+          .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
           .filter((m) => {
             if (m.trigger_type !== "time" && m.trigger_type !== "recurring") return false;
             if (!m.trigger_time) return false;
             if (m.trigger_time !== current) return false;
             if (m.last_notified_date === d) return false;
-            if (m.expiry_date && m.expiry_date < d) return false;
             return true;
           });
       },
@@ -287,7 +281,7 @@ export const useMemoryStore = create<MemoryState>()(
         if (state) {
           state.hydrated = true;
           if (!state.memories?.length) {
-            voidMicrotask(() => useMemoryStore.getState().seedIfEmpty());
+            queueMicrotask(() => useMemoryStore.getState().seedIfEmpty());
           }
         }
       },
