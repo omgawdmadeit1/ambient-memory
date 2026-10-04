@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { isMemoryDue } from "./due";
 import type { CaptureResult, Memory, ParsedMemory } from "./types";
 import { parseLocally } from "./parser";
 
@@ -259,20 +260,10 @@ export const useMemoryStore = create<MemoryState>()(
       },
 
       dueForNotification: (now = new Date()) => {
-        const hh = now.getHours().toString().padStart(2, "0");
-        const mm = now.getMinutes().toString().padStart(2, "0");
-        const current = `${hh}:${mm}`;
         const d = todayDate();
         return get()
           .activeMemories()
-          .filter((m) => {
-            if (m.trigger_type !== "time" && m.trigger_type !== "recurring") return false;
-            if (!m.trigger_time) return false;
-            if (m.trigger_time !== current) return false;
-            if (m.last_notified_date === d) return false;
-            if (m.expiry_date && m.expiry_date < d) return false;
-            return true;
-          });
+          .filter((m) => isMemoryDue(m, now, d));
       },
 
       resetDemo: () => {
