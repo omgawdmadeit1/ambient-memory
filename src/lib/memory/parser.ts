@@ -77,7 +77,15 @@ export function parseLocally(raw: string): ParsedMemory {
       /doctor\s+said\s+take\s+(?:the\s+)?([a-z0-9\s\-]+?)\s+at\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?|\d{1,2}:\d{2})\s*(?:for\s+(?:the\s+)?(?:next\s+)?(\d+)\s*days?)?/i,
     );
     const hit = doctorMed || med;
-    if (hit || (lower.includes("antibiotic") && (lower.includes("8pm") || lower.includes("8 pm") || lower.includes("20:00")))) {
+    const namesWeekday = /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/.test(lower);
+    const explicitDays = Boolean(hit?.[3] || /\b\d+\s*days?\b/.test(lower));
+    // "take meds next Monday at 8am" is a one-shot, not a 10-day course.
+    const dailyMed =
+      (hit ||
+        (lower.includes("antibiotic") &&
+          (lower.includes("8pm") || lower.includes("8 pm") || lower.includes("20:00")))) &&
+      !(namesWeekday && !explicitDays);
+    if (dailyMed) {
       const entity = hit?.[1]?.trim() || "antibiotic";
       const timeRaw = hit?.[2] || "8pm";
       const days = hit?.[3] ? parseInt(hit[3], 10) : lower.match(/(\d+)\s*days?/)?.[1]
