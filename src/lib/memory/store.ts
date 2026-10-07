@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { similarEntity, shouldAutoSupersede } from "./match";
 import type { CaptureResult, Memory, ParsedMemory } from "./types";
 import { parseLocally } from "./parser";
 
@@ -57,20 +58,6 @@ function nowIso() {
 
 function todayDate() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function entityKey(entity: string | null | undefined) {
-  return (entity || "").trim().toLowerCase();
-}
-
-function similarEntity(a: string | null, b: string | null) {
-  const ka = entityKey(a);
-  const kb = entityKey(b);
-  if (!ka || !kb) return false;
-  if (ka === kb) return true;
-  if (ka.includes(kb) || kb.includes(ka)) return true;
-  if (ka.includes("shoe") && kb.includes("shoe")) return true;
-  return false;
 }
 
 function buildMemory(raw: string, parsed: ParsedMemory, id?: string): Memory {
@@ -154,11 +141,7 @@ export const useMemoryStore = create<MemoryState>()(
         );
 
         if (existing) {
-          const highConf =
-            (parsed.confidence >= 0.7 && !!parsed.supersedes_hint) ||
-            (parsed.confidence >= 0.85 && similarEntity(existing.entity, parsed.entity));
-
-          if (highConf) {
+          if (shouldAutoSupersede(existing.entity, parsed)) {
             const neu = buildMemory(raw, parsed);
             set((s) => ({
               memories: [
