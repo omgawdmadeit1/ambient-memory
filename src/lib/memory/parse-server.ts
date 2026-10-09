@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { parseLocally, normalizeTriggerType } from "./parser";
+import { parseLocally, normalizeTriggerTime, normalizeTriggerType } from "./parser";
 import type { ParsedMemory } from "./types";
 
 const SYSTEM = `You are a precise memory extraction engine.
@@ -46,7 +46,7 @@ function coerce(parsed: unknown, fallbackText: string): ParsedMemory {
     entity: typeof o.entity === "string" ? o.entity : null,
     fact: typeof o.fact === "string" ? o.fact : null,
     trigger_type: normalizeTriggerType(o.trigger_type),
-    trigger_time: typeof o.trigger_time === "string" ? o.trigger_time : null,
+    trigger_time: normalizeTriggerTime(o.trigger_time),
     recurrence_rule: typeof o.recurrence_rule === "string" ? o.recurrence_rule : null,
     expiry_date: typeof o.expiry_date === "string" ? o.expiry_date : null,
     supersedes_hint: typeof o.supersedes_hint === "string" ? o.supersedes_hint : null,

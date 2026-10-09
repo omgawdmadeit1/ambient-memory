@@ -52,6 +52,26 @@ function parseClock(text: string): string | null {
 }
 
 /**
+ * Canonical 24h `HH:MM` used by the reminder poller.
+ * Local parse always pads; the xAI path previously stored model text as-is
+ * (`8:00`, `8:00 PM`), so due checks against `08:00` / `20:00` never fired.
+ */
+export function normalizeTriggerTime(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return parseClock(trimmed);
+}
+
+/** Compare a stored (possibly model-shaped) time to the local clock. */
+export function triggerTimeMatches(stored: string | null | undefined, now: Date): boolean {
+  const due = normalizeTriggerTime(stored);
+  if (!due) return false;
+  const current = `${pad2(now.getHours())}:${pad2(now.getMinutes())}`;
+  return due === current;
+}
+
+/**
  * Deterministic local parser covering the required test set and common capture
  * patterns. Used as primary path when xAI is unavailable, and as fallback.
  */

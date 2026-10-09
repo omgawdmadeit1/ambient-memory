@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CaptureResult, Memory, ParsedMemory } from "./types";
-import { parseLocally } from "./parser";
+import { normalizeTriggerTime, parseLocally, triggerTimeMatches } from "./parser";
 
 const SEED_RAW = [
   "Doctor said take the antibiotic at 8pm for the next 10 days",
@@ -81,7 +81,7 @@ function buildMemory(raw: string, parsed: ParsedMemory, id?: string): Memory {
     entity: parsed.entity,
     fact: parsed.fact,
     trigger_type: parsed.trigger_type,
-    trigger_time: parsed.trigger_time,
+    trigger_time: normalizeTriggerTime(parsed.trigger_time),
     recurrence_rule: parsed.recurrence_rule,
     expiry_date: parsed.expiry_date,
     superseded_by: null,
@@ -259,16 +259,12 @@ export const useMemoryStore = create<MemoryState>()(
       },
 
       dueForNotification: (now = new Date()) => {
-        const hh = now.getHours().toString().padStart(2, "0");
-        const mm = now.getMinutes().toString().padStart(2, "0");
-        const current = `${hh}:${mm}`;
         const d = todayDate();
         return get()
           .activeMemories()
           .filter((m) => {
             if (m.trigger_type !== "time" && m.trigger_type !== "recurring") return false;
-            if (!m.trigger_time) return false;
-            if (m.trigger_time !== current) return false;
+            if (!triggerTimeMatches(m.trigger_time, now)) return false;
             if (m.last_notified_date === d) return false;
             if (m.expiry_date && m.expiry_date < d) return false;
             return true;
