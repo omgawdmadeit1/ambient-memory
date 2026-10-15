@@ -287,7 +287,7 @@ export const useMemoryStore = create<MemoryState>()(
         if (state) {
           state.hydrated = true;
           if (!state.memories?.length) {
-            voidMicrotask(() => useMemoryStore.getState().seedIfEmpty());
+            queueMicrotask(() => useMemoryStore.getState().seedIfEmpty());
           }
         }
       },
